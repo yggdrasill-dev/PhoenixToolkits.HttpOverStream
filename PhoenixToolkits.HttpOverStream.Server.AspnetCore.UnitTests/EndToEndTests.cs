@@ -3,7 +3,6 @@ using System.Reflection;
 using HttpOverStream.Client;
 using HttpOverStream.NamedPipe;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
@@ -49,7 +48,7 @@ public class EndToEndTests
 			.AddApplicationPart(Assembly.GetExecutingAssembly());
 
 		builder.WebHost
-			.UseServer(new CustomListenerHost(new NamedPipeListener("test-core-get")));
+			.UseHttpOverStreamServer(new NamedPipeListener("test-core-get"));
 
 		var host = builder.Build();
 
@@ -75,7 +74,7 @@ public class EndToEndTests
 			.AddApplicationPart(Assembly.GetExecutingAssembly());
 
 		builder.WebHost
-			.UseServer(new CustomListenerHost(new NamedPipeListener("test-core-post")));
+			.UseHttpOverStreamServer(new NamedPipeListener("test-core-post"));
 
 		var host = builder.Build();
 

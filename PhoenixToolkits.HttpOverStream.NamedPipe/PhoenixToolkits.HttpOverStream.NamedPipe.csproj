@@ -4,6 +4,16 @@
     <TargetFramework>net6.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <PackageId>PhoenixToolkits.HttpOverStream.NamedPipe</PackageId>
+    <Version>0.0.1</Version>
+    <Authors>Phoenix</Authors>
+    <Company>Valhalla</Company>
+    <Product>PhoenixToolkits.HttpOverStream.NamedPipe</Product>
+    <PackageProjectUrl>https://github.com/yggdrasill-dev/PhoenixToolkits.HttpOverStream</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/yggdrasill-dev/PhoenixToolkits.HttpOverStream.git</RepositoryUrl>
+    <PackageTags>HttpOverStream</PackageTags>
+    <Description>把HttpOverStream.NamedPipe實作到dotnet core平台</Description>
+    <RootNamespace>HttpOverStream.NamedPipe</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>

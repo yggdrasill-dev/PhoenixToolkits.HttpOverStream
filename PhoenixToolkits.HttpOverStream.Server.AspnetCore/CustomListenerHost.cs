@@ -48,12 +48,12 @@ public class CustomListenerHost : IServer
 			{
 				var httpCtx = new DefaultHttpContext();
 
-				var rf = httpCtx.Features.Get<IHttpRequestFeature>();
+				var requestFeature = httpCtx.Features.Get<IHttpRequestFeature>()!;
 
-				var requestFeature = await CreateRequestAsync(
+				await CreateRequestAsync(
+					requestFeature,
 					stream,
 					CancellationToken.None).ConfigureAwait(false);
-				httpCtx.Features.Set(requestFeature);
 
 				var responseFeature = httpCtx.Features.Get<IHttpResponseFeature>()!;
 
@@ -91,20 +91,19 @@ public class CustomListenerHost : IServer
 		}
 	}
 
-	private async Task<IHttpRequestFeature> CreateRequestAsync(Stream stream, CancellationToken cancellationToken)
+	private async Task CreateRequestAsync(IHttpRequestFeature requestFeature, Stream stream, CancellationToken cancellationToken)
 	{
 		var firstLine = await stream.ReadLineAsync(cancellationToken).ConfigureAwait(false);
 		var parts = firstLine.Split(' ');
-		var result = new HttpRequestFeature();
-		result.Headers.Host = "localhost";
+		//requestFeature.Headers.Host = "localhost";
 
-		result.Method = parts[0];
+		requestFeature.Method = parts[0];
 		var uri = new Uri(parts[1], UriKind.RelativeOrAbsolute);
 		if (!uri.IsAbsoluteUri)
 		{
 			uri = new Uri(_localhostUri, uri);
 		}
-		result.Protocol = parts[2];
+		requestFeature.Protocol = parts[2];
 		for (; ; )
 		{
 			var line = await stream.ReadLineAsync(cancellationToken).ConfigureAwait(false);
@@ -113,13 +112,12 @@ public class CustomListenerHost : IServer
 				break;
 			}
 			(var name, var values) = HttpParser.ParseHeaderNameValues(line);
-			result.Headers.Add(name, new Microsoft.Extensions.Primitives.StringValues(values.ToArray()));
+			requestFeature.Headers.Add(name, new Microsoft.Extensions.Primitives.StringValues(values.ToArray()));
 		}
 
-		result.Scheme = uri.Scheme;
-		result.Path = PathString.FromUriComponent(uri);
-		result.QueryString = QueryString.FromUriComponent(uri).Value ?? string.Empty;
-		result.Body = new BodyStream(stream, result.Headers.ContentLength);
-		return result;
+		requestFeature.Scheme = uri.Scheme;
+		requestFeature.Path = PathString.FromUriComponent(uri);
+		requestFeature.QueryString = QueryString.FromUriComponent(uri).Value ?? string.Empty;
+		requestFeature.Body = new BodyStream(stream, requestFeature.Headers.ContentLength);
 	}
 }
