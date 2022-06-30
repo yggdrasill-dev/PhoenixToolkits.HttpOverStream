@@ -18,12 +18,24 @@ jobs:
     - uses: actions/checkout@v2
     - name: Restore dependencies
       run: dotnet restore
+
+    - name: Test
+      run: dotnet test -c ${{env.BuildConfiguration}} --no-restore -l trx
+      
+    - name: Test Report
+      uses: dorny/test-reporter@v1
+      if: success() || failure()    # run this step even if previous step failed
+      with:
+        name: Dotnet Tests            # Name of the check run which will be created
+        path: '**/TestResults/*.trx'    # Path to test results
+        reporter: dotnet-trx
+
     - name: Pack
       run: |
         dotnet pack -c ${{env.BuildConfiguration}} --no-restore PhoenixToolkits.HttpOverStream.NamedPipe/PhoenixToolkits.HttpOverStream.NamedPipe.csproj
         dotnet pack -c ${{env.BuildConfiguration}} --no-restore PhoenixToolkits.HttpOverStream.Server.AspnetCore/PhoenixToolkits.HttpOverStream.Server.AspnetCore.csproj
     - name: Upload a Build Artifact
-      uses: actions/upload-artifact@v2.2.2
+      uses: actions/upload-artifact@v3
       with:
         # Artifact name
         name: nuget
@@ -31,6 +43,7 @@ jobs:
         path: |
           PhoenixToolkits.HttpOverStream.NamedPipe/bin/${{env.BuildConfiguration}}/*.nupkg
           PhoenixToolkits.HttpOverStream.Server.AspnetCore/bin/${{env.BuildConfiguration}}/*.nupkg
+          
   push-nuget-package:
     runs-on: self-hosted
     needs: build
@@ -44,4 +57,4 @@ jobs:
         path: nuget
     - name: push
       run: |
-        dotnet nuget push "nuget\*.nupkg" -s "nuget.org" -k "${{ secrets.PUBNUGETAPIKEY }}" --skip-duplicate
+        dotnet nuget push "nuget\**\*.nupkg" -s "nuget.org" -k "${{ secrets.PUBNUGETAPIKEY }}" --skip-duplicate
