@@ -6,7 +6,7 @@ namespace HttpOverStream.NamedPipe;
 
 public class NamedPipeListener : IListen
 {
-	private static readonly int _numServerThreads = 5;
+	private static readonly int _NumServerThreads = 5;
 	private readonly string _pipeName;
 	private readonly PipeOptions _pipeOptions;
 	private readonly PipeTransmissionMode _pipeTransmissionMode;
@@ -61,6 +61,7 @@ public class NamedPipeListener : IListen
 			// NamedPipe cancellations can throw ObjectDisposedException
 			// They will be grouped in an AggregateException and this shouldnt break
 		}
+
 		try
 		{
 			await _listenTask!.ConfigureAwait(false);
@@ -70,23 +71,16 @@ public class NamedPipeListener : IListen
 		}
 	}
 
+	[System.Diagnostics.CodeAnalysis.SuppressMessage("Interoperability", "CA1416:驗證平台相容性", Justification = "<暫止>")]
 	public IPrincipal? GetTransportIdentity(Stream connection)
 	{
-		var serverStream = connection as NamedPipeServerStream;
-		if (serverStream == null)
-		{
+		if (connection is not NamedPipeServerStream serverStream)
 			throw new InvalidOperationException("connection should be a NamedPipeServerStream");
-		}
 
 		WindowsPrincipal? principal = null;
 		try
 		{
-			serverStream.RunAsClient(() =>
-			{
-#pragma warning disable CA1416 // 驗證平台相容性
-				principal = new WindowsPrincipal(WindowsIdentity.GetCurrent());
-#pragma warning restore CA1416 // 驗證平台相容性
-			});
+			serverStream.RunAsClient(() => principal = new WindowsPrincipal(WindowsIdentity.GetCurrent()));
 		}
 		catch
 		{
@@ -103,15 +97,19 @@ public class NamedPipeListener : IListen
 
 		// We block on creating the dummy server/client to ensure we definitely have that set up before doing anything else
 		var (dummyClient, dummyServer) = ConnectDummyClientAndServer(cancellationToken);
-		tasks.Add(Task.Run(() => DisposeWhenCancelled(dummyClient, "client", cancellationToken)));
-		tasks.Add(Task.Run(() => DisposeWhenCancelled(dummyServer, "server", cancellationToken)));
+		tasks.Add(Task.Run(
+			() => DisposeWhenCancelled(dummyClient, "client", cancellationToken),
+			cancellationToken));
+		tasks.Add(Task.Run(
+			() => DisposeWhenCancelled(dummyServer, "server", cancellationToken),
+			cancellationToken));
 
 		// This runs synchronously until we've created the first server listener to ensure we can handle at least the first client connection
 		var listenTask = CreateServerStreamAndListen(-1, onConnection, cancellationToken);
 		tasks.Add(listenTask);
 
 		// We don't technically need more than 1 thread but its faster
-		for (int i = 0; i < _numServerThreads - 1; i++)
+		for (int i = 0; i < _NumServerThreads - 1; i++)
 		{
 			var i1 = i; // Capture value immediately to prevent late closure binding
 			tasks.Add(Task.Run(() => CreateServerStreamAndListen(i1, onConnection, cancellationToken), cancellationToken));
@@ -142,9 +140,7 @@ public class NamedPipeListener : IListen
 					_logger.LogVerbose("[ thread " + threadNumber + "] Found connection!");
 					// MP: We deliberately don't await this because we want to kick off the work on a background thead
 					// and immediately check for the next client connecting
-#pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
-					Task.Run(() => onConnection(serverStream), cancelToken);
-#pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
+					_ = Task.Run(() => onConnection(serverStream), cancelToken);
 				}
 				catch (OperationCanceledException) // Thrown when cancellationToken is cancelled
 				{
@@ -161,6 +157,7 @@ public class NamedPipeListener : IListen
 					{
 						_logger.LogWarning("[ thread " + threadNumber + "] IOException, possibly because the client disconnected early:" + ex);
 					}
+
 					serverStream.Dispose();
 				}
 				catch (Exception e)
@@ -169,6 +166,7 @@ public class NamedPipeListener : IListen
 					serverStream.Dispose();
 				}
 			}
+
 			_logger.LogVerbose("[ thread " + threadNumber + "] Stopping thread - cancelled");
 		}
 		catch (Exception e)
@@ -193,7 +191,7 @@ public class NamedPipeListener : IListen
 				_pipeOptions,
 				0,
 				0);
-			serverStream.WaitForConnectionAsync(cancellationToken);
+			_ = serverStream.WaitForConnectionAsync(cancellationToken);
 
 			var dummyClientStream = new NamedPipeClientStream(".", _pipeName, PipeDirection.InOut, PipeOptions.Asynchronous);
 			try
@@ -240,7 +238,7 @@ internal static class CancellationTokenExtensions
 	public static Task WhenCanceled(this CancellationToken cancellationToken)
 	{
 		var tcs = new TaskCompletionSource<bool>();
-		cancellationToken.Register(s => ((TaskCompletionSource<bool>)s!).SetResult(true), tcs);
+		_ = cancellationToken.Register(s => ((TaskCompletionSource<bool>)s!).SetResult(true), tcs);
 		return tcs.Task;
 	}
 }

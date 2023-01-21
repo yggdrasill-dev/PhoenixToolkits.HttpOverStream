@@ -1,4 +1,4 @@
-using System.Net.Http.Json;
+﻿using System.Net.Http.Json;
 using System.Reflection;
 using HttpOverStream.Client;
 using HttpOverStream.NamedPipe;
@@ -23,12 +23,14 @@ public class WelcomeMessage
 public class EndToEndApiController : ControllerBase
 {
 	[HttpGet("hello-world")]
+	[System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1822:將成員標記為靜態", Justification = "<暫止>")]
 	public string HelloWorld()
 	{
 		return "Hello World";
 	}
 
 	[HttpPost("hello")]
+	[System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1822:將成員標記為靜態", Justification = "<暫止>")]
 	public WelcomeMessage Hello([FromBody] PersonMessage person)
 	{
 		return new WelcomeMessage { Text = $"Hello {person.Name}" };
@@ -43,16 +45,16 @@ public class EndToEndTests
 	{
 		var builder = WebApplication.CreateBuilder();
 
-		builder.Services
+		_ = builder.Services
 			.AddControllers()
 			.AddApplicationPart(Assembly.GetExecutingAssembly());
 
-		builder.WebHost
+		_ = builder.WebHost
 			.UseHttpOverStreamServer(new NamedPipeListener("test-core-get"));
 
-		var host = builder.Build();
+		using var host = builder.Build();
 
-		host.MapControllers();
+		_ = host.MapControllers();
 
 		await host.StartAsync();
 
@@ -69,16 +71,16 @@ public class EndToEndTests
 	{
 		var builder = WebApplication.CreateBuilder();
 
-		builder.Services
+		_ = builder.Services
 			.AddControllers()
 			.AddApplicationPart(Assembly.GetExecutingAssembly());
 
-		builder.WebHost
+		_ = builder.WebHost
 			.UseHttpOverStreamServer(new NamedPipeListener("test-core-post"));
 
 		var host = builder.Build();
 
-		host.MapControllers();
+		_ = host.MapControllers();
 
 		await host.StartAsync();
 

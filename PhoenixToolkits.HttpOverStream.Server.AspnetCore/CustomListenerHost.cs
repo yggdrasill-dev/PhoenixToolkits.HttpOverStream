@@ -6,7 +6,7 @@ namespace PhoenixToolkits.HttpOverStream.Server.AspnetCore;
 
 public class CustomListenerHost : IServer
 {
-	private static Uri _localhostUri = new Uri("http://localhost/");
+	private static readonly Uri _LocalhostUri = new("http://localhost/");
 	private readonly IListen _listener;
 
 	public IFeatureCollection Features { get; }
@@ -24,12 +24,9 @@ public class CustomListenerHost : IServer
 
 	public Task StartAsync<TContext>(IHttpApplication<TContext> application, CancellationToken cancellationToken)
 		where TContext : notnull
-	{
-		return _listener.StartAsync(stream =>
-		{
-			HandleClientStream(stream, application);
-		}, cancellationToken);
-	}
+		=> _listener.StartAsync(
+			stream => HandleClientStream(stream, application),
+			cancellationToken);
 
 	public Task StopAsync(CancellationToken cancellationToken)
 	{
@@ -37,10 +34,12 @@ public class CustomListenerHost : IServer
 	}
 
 	public void Dispose()
-	{ }
+	{
+		GC.SuppressFinalize(this);
+	}
 
-	private async void HandleClientStream<TContext>(Stream stream, IHttpApplication<TContext> application)
-				where TContext : notnull
+	private static async void HandleClientStream<TContext>(Stream stream, IHttpApplication<TContext> application)
+		where TContext : notnull
 	{
 		try
 		{
@@ -91,7 +90,7 @@ public class CustomListenerHost : IServer
 		}
 	}
 
-	private async Task CreateRequestAsync(IHttpRequestFeature requestFeature, Stream stream, CancellationToken cancellationToken)
+	private static async Task CreateRequestAsync(IHttpRequestFeature requestFeature, Stream stream, CancellationToken cancellationToken)
 	{
 		var firstLine = await stream.ReadLineAsync(cancellationToken).ConfigureAwait(false);
 		var parts = firstLine.Split(' ');
@@ -101,8 +100,9 @@ public class CustomListenerHost : IServer
 		var uri = new Uri(parts[1], UriKind.RelativeOrAbsolute);
 		if (!uri.IsAbsoluteUri)
 		{
-			uri = new Uri(_localhostUri, uri);
+			uri = new Uri(_LocalhostUri, uri);
 		}
+
 		requestFeature.Protocol = parts[2];
 		for (; ; )
 		{
@@ -111,6 +111,7 @@ public class CustomListenerHost : IServer
 			{
 				break;
 			}
+
 			(var name, var values) = HttpParser.ParseHeaderNameValues(line);
 			requestFeature.Headers.Add(name, new Microsoft.Extensions.Primitives.StringValues(values.ToArray()));
 		}

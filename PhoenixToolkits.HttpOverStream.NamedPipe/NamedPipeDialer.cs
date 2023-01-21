@@ -21,7 +21,12 @@ public class NamedPipeDialer : IDial
 	{
 	}
 
-	public NamedPipeDialer(string pipeName, string serverName, PipeOptions pipeOptions, int timeoutMs, TokenImpersonationLevel impersonationLevel = TokenImpersonationLevel.Identification)
+	public NamedPipeDialer(
+		string pipeName,
+		string serverName,
+		PipeOptions pipeOptions,
+		int timeoutMs,
+		TokenImpersonationLevel impersonationLevel = TokenImpersonationLevel.Identification)
 	{
 		_pipeName = pipeName;
 		_serverName = serverName;
@@ -38,10 +43,13 @@ public class NamedPipeDialer : IDial
 			PipeDirection.InOut,
 			_pipeOptions,
 			_impersonationLevel);
-		await pipeStream.ConnectAsync(_timeoutMs, cancellationToken).ConfigureAwait(false);
+
+		await pipeStream.ConnectAsync(
+			_timeoutMs,
+			cancellationToken).ConfigureAwait(false);
+
 		if (cancellationToken.CanBeCanceled)
-		{
-			cancellationToken.Register(() =>
+			_ = cancellationToken.Register(() =>
 				{
 					try
 					{
@@ -50,7 +58,7 @@ public class NamedPipeDialer : IDial
 					catch (Exception) { }
 				}
 			);
-		}
+
 		return pipeStream;
 	}
 }

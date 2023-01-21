@@ -6,7 +6,7 @@ namespace HttpOverStream.NamedPipe;
 
 public class NamedPipeHttpClientBuilder
 {
-	private string _pipeName;
+	private readonly string _pipeName;
 	private ILoggerHttpOverStream? _logger;
 	private DelegatingHandler? _outerHandler;
 	private TimeSpan? _perRequestTimeout;
